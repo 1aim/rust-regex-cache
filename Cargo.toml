@@ -1,0 +1,16 @@
+[package]
+name    = "regex-cache"
+version = "0.1.0"
+
+authors = ["meh. <meh@1aim.com>"]
+license = "MIT"
+
+description = "Lazy and cached regular expressions."
+repository  = "https://github.com/1aim/rust-regex-cache"
+keywords    = ["regex", "lazy", "cache"]
+
+[dependencies]
+regex        = "0.2"
+regex-syntax = "0.4"
+lru-cache    = "0.1"
+thread_local = "0.3"
