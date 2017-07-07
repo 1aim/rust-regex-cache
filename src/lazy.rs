@@ -19,6 +19,8 @@
 // SOFTWARE.
 
 use std::ops::Deref;
+use std::fmt;
+use std::str;
 
 use regex::{Regex, RegexBuilder, Error};
 use syntax::Expr;
@@ -28,7 +30,6 @@ use thread_local::CachedThreadLocal;
 ///
 /// At the first `Deref` the given source will be compiled and saved in the
 /// Local Thread Storage, thus avoiding locking.
-#[derive(Debug)]
 pub struct Lazy {
 	builder: Builder,
 	local:   CachedThreadLocal<Regex>,
@@ -73,6 +74,26 @@ impl Clone for Lazy {
 			builder: self.builder.clone(),
 			local:   Default::default(),
 		}
+	}
+}
+
+impl fmt::Debug for Lazy {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		fmt::Debug::fmt(&**self, f)
+	}
+}
+
+impl fmt::Display for Lazy {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		fmt::Display::fmt(&**self, f)
+	}
+}
+
+impl str::FromStr for Lazy {
+	type Err = Error;
+
+	fn from_str(s: &str) -> Result<Lazy, Error> {
+		Lazy::new(s)
 	}
 }
 
