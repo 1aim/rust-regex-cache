@@ -18,6 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+//! This crate provides a library for caching or lazily creating regular
+//! expressions.
+//!
+//! Lazy regular expressions are backed by Thread Local Storage, while the
+//! regular expression cache is backed by a Least Recently Used cache.
+
 extern crate regex;
 extern crate regex_syntax as syntax;
 extern crate lru_cache as lru;
