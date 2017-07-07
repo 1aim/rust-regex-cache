@@ -31,8 +31,6 @@ use thread_local::CachedThreadLocal;
 /// At the first `Deref` the given source will be compiled and saved in the
 /// Local Thread Storage, thus avoiding locking.
 ///
-/// All the methods from `Regex` are available on a `LazyRegex`.
-///
 /// # Example
 ///
 /// Find the location of a US phone number:
