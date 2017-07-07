@@ -1,4 +1,4 @@
-regex-cache [![Crates.io](https://img.shields.io/crates/v/regex-cache.svg)](https://crates.io/crates/regex-cache) ![regex-cache](https://docs.rs/regex-cache/badge.svg) ![MIT](http://img.shields.io/badge/license-MIT-blue.svg) [![Build Status](https://travis-ci.org/1aim/rust-regex-cache.svg?branch=master)](https://travis-ci.org/1aim/rust-regex-cache)
+regex-cache [![Crates.io](https://img.shields.io/crates/v/regex-cache.svg)](https://crates.io/crates/regex-cache) [![regex-cache](https://docs.rs/regex-cache/badge.svg)](https://docs.rs/regex-cache) ![MIT](http://img.shields.io/badge/license-MIT-blue.svg) [![Build Status](https://travis-ci.org/1aim/rust-regex-cache.svg?branch=master)](https://travis-ci.org/1aim/rust-regex-cache)
 ===========
 This crate provides a library for caching or lazily creating regular
 expressions.
