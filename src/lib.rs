@@ -23,8 +23,10 @@ extern crate regex_syntax as syntax;
 extern crate lru_cache as lru;
 extern crate thread_local;
 
+pub use regex::{Regex, RegexBuilder, Error};
+
 mod cache;
-pub use cache::Cache as RegexCache;
+pub use cache::RegexCache;
 
 mod lazy;
-pub use lazy::{Lazy as LazyRegex, Builder as LazyRegexBuilder};
+pub use lazy::{LazyRegex, LazyRegexBuilder};

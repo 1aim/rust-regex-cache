@@ -24,12 +24,12 @@ use regex::{Regex, Error};
 use lru::LruCache;
 
 /// An LRU cache for regular expressions.
-pub struct Cache(LruCache<String, Regex>);
+pub struct RegexCache(LruCache<String, Regex>);
 
-impl Cache {
+impl RegexCache {
 	/// Create a new LRU cache with the given size limit.
-	pub fn new(capacity: usize) -> Cache {
-		Cache(LruCache::new(capacity))
+	pub fn new(capacity: usize) -> RegexCache {
+		RegexCache(LruCache::new(capacity))
 	}
 
 	/// Check if the same `Regex` is already present in the cache and return it,
@@ -43,7 +43,7 @@ impl Cache {
 	}
 }
 
-impl Deref for Cache {
+impl Deref for RegexCache {
 	type Target = LruCache<String, Regex>;
 
 	fn deref(&self) -> &Self::Target {
@@ -51,7 +51,7 @@ impl Deref for Cache {
 	}
 }
 
-impl DerefMut for Cache {
+impl DerefMut for RegexCache {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		&mut self.0
 	}
@@ -59,11 +59,17 @@ impl DerefMut for Cache {
 
 #[cfg(test)]
 mod test {
-	use cache::Cache;
+	use cache::RegexCache;
 
 	#[test]
-	fn compile() {
-		let mut cache = Cache::new(100);
-		assert!(cache.compile("[01]2").unwrap().is_match("12"));
+	fn respects_limit() {
+		let mut cache = RegexCache::new(2);
+
+		cache.compile("[01]2").unwrap();
+		cache.compile("[21]0").unwrap();
+
+		assert_eq!(cache.len(), 2);
+		cache.compile("[21]3").unwrap();
+		assert_eq!(cache.len(), 2);
 	}
 }

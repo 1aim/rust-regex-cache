@@ -30,27 +30,40 @@ use thread_local::CachedThreadLocal;
 ///
 /// At the first `Deref` the given source will be compiled and saved in the
 /// Local Thread Storage, thus avoiding locking.
-pub struct Lazy {
-	builder: Builder,
+///
+/// All the methods from `Regex` are available on a `LazyRegex`.
+///
+/// # Example
+///
+/// Find the location of a US phone number:
+///
+/// ```
+/// # use regex_cache::LazyRegex;
+/// let re = LazyRegex::new("[0-9]{3}-[0-9]{3}-[0-9]{4}").unwrap();
+/// let mat = re.find("phone: 111-222-3333").unwrap();
+/// assert_eq!((mat.start(), mat.end()), (7, 19));
+/// ```
+pub struct LazyRegex {
+	builder: LazyRegexBuilder,
 	local:   CachedThreadLocal<Regex>,
 }
 
-impl Lazy {
+impl LazyRegex {
 	/// Create a new lazy `Regex` for the given source, checking the syntax is
 	/// valid.
-	pub fn new(source: &str) -> Result<Lazy, Error> {
+	pub fn new(source: &str) -> Result<LazyRegex, Error> {
 		if let Err(err) = Expr::parse(source) {
 			return Err(err.into());
 		}
 
-		Ok(Lazy {
-			builder: Builder::new(source),
+		Ok(LazyRegex {
+			builder: LazyRegexBuilder::new(source),
 			local:   Default::default(),
 		})
 	}
 }
 
-impl Deref for Lazy {
+impl Deref for LazyRegex {
 	type Target = Regex;
 
 	fn deref(&self) -> &Regex {
@@ -68,38 +81,38 @@ impl Deref for Lazy {
 	}
 }
 
-impl Clone for Lazy {
-	fn clone(&self) -> Lazy {
-		Lazy {
+impl Clone for LazyRegex {
+	fn clone(&self) -> LazyRegex {
+		LazyRegex {
 			builder: self.builder.clone(),
 			local:   Default::default(),
 		}
 	}
 }
 
-impl fmt::Debug for Lazy {
+impl fmt::Debug for LazyRegex {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		fmt::Debug::fmt(&**self, f)
 	}
 }
 
-impl fmt::Display for Lazy {
+impl fmt::Display for LazyRegex {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		fmt::Display::fmt(&**self, f)
 	}
 }
 
-impl str::FromStr for Lazy {
+impl str::FromStr for LazyRegex {
 	type Err = Error;
 
-	fn from_str(s: &str) -> Result<Lazy, Error> {
-		Lazy::new(s)
+	fn from_str(s: &str) -> Result<LazyRegex, Error> {
+		LazyRegex::new(s)
 	}
 }
 
 /// A configurable builder for a lazy `Regex`.
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub struct Builder {
+pub struct LazyRegexBuilder {
 	source: String,
 	case_insensitive: bool,
 	multi_line: bool,
@@ -111,9 +124,9 @@ pub struct Builder {
 	dfa_size_limit: usize,
 }
 
-impl Default for Builder {
+impl Default for LazyRegexBuilder {
 	fn default() -> Self {
-		Builder {
+		LazyRegexBuilder {
 			source: "".into(),
 			case_insensitive: false,
 			multi_line: false,
@@ -127,13 +140,13 @@ impl Default for Builder {
 	}
 }
 
-impl Builder {
+impl LazyRegexBuilder {
 	/// Create a new regular expression builder with the given pattern.
 	///
 	/// If the pattern is invalid, then an error will be returned when
 	/// `compile` is called.
-	pub fn new(source: &str) -> Builder {
-		Builder {
+	pub fn new(source: &str) -> LazyRegexBuilder {
+		LazyRegexBuilder {
 			source: source.to_owned(),
 
 			.. Default::default()
@@ -145,25 +158,25 @@ impl Builder {
 	/// Note that calling `as_str` on the resulting `Regex` will produce the
 	/// pattern given to `new` verbatim. Notably, it will not incorporate any
 	/// of the flags set on this builder.
-	pub fn build(&self) -> Result<Lazy, Error> {
+	pub fn build(&self) -> Result<LazyRegex, Error> {
 		if let Err(err) = Expr::parse(&self.source) {
 			return Err(err.into());
 		}
 
-		Ok(Lazy {
+		Ok(LazyRegex {
 			builder: self.clone(),
 			local:   Default::default(),
 		})
 	}
 
 	/// Set the value for the case insensitive (`i`) flag.
-	pub fn case_insensitive(&mut self, yes: bool) -> &mut Builder {
+	pub fn case_insensitive(&mut self, yes: bool) -> &mut LazyRegexBuilder {
 		self.case_insensitive = yes;
 		self
 	}
 
 	/// Set the value for the multi-line matching (`m`) flag.
-	pub fn multi_line(&mut self, yes: bool) -> &mut Builder {
+	pub fn multi_line(&mut self, yes: bool) -> &mut LazyRegexBuilder {
 		self.multi_line = yes;
 		self
 	}
@@ -175,25 +188,25 @@ impl Builder {
 	/// N.B. "matches anything" means "any byte" for `regex::bytes::Regex`
 	/// expressions and means "any Unicode scalar value" for `regex::Regex`
 	/// expressions.
-	pub fn dot_matches_new_line(&mut self, yes: bool) -> &mut Builder {
+	pub fn dot_matches_new_line(&mut self, yes: bool) -> &mut LazyRegexBuilder {
 		self.dot_matches_new_line = yes;
 		self
 	}
 
 	/// Set the value for the greedy swap (`U`) flag.
-	pub fn swap_greed(&mut self, yes: bool) -> &mut Builder {
+	pub fn swap_greed(&mut self, yes: bool) -> &mut LazyRegexBuilder {
 		self.swap_greed = yes;
 		self
 	}
 
 	/// Set the value for the ignore whitespace (`x`) flag.
-	pub fn ignore_whitespace(&mut self, yes: bool) -> &mut Builder {
+	pub fn ignore_whitespace(&mut self, yes: bool) -> &mut LazyRegexBuilder {
 		self.ignore_whitespace = yes;
 		self
 	}
 
 	/// Set the value for the Unicode (`u`) flag.
-	pub fn unicode(&mut self, yes: bool) -> &mut Builder {
+	pub fn unicode(&mut self, yes: bool) -> &mut LazyRegexBuilder {
 		self.unicode = yes;
 		self
 	}
@@ -203,7 +216,7 @@ impl Builder {
 	/// This roughly corresponds to the number of bytes occupied by a single
 	/// compiled program. If the program exceeds this number, then a
 	/// compilation error is returned.
-	pub fn size_limit(&mut self, limit: usize) -> &mut Builder {
+	pub fn size_limit(&mut self, limit: usize) -> &mut LazyRegexBuilder {
 		self.size_limit = limit;
 		self
 	}
@@ -217,7 +230,7 @@ impl Builder {
 	/// limit. In particular, if a regex is used from multiple threads
 	/// simulanteously, then each thread may use up to the number of bytes
 	/// specified here.
-	pub fn dfa_size_limit(&mut self, limit: usize) -> &mut Builder {
+	pub fn dfa_size_limit(&mut self, limit: usize) -> &mut LazyRegexBuilder {
 		self.dfa_size_limit = limit;
 		self
 	}
