@@ -20,7 +20,7 @@
 
 use std::ops::{Deref, DerefMut};
 
-use regex::{Regex, Error};
+use regex::{Regex, RegexBuilder, Error};
 use lru::LruCache;
 
 /// An LRU cache for regular expressions.
@@ -32,11 +32,70 @@ impl RegexCache {
 		RegexCache(LruCache::new(capacity))
 	}
 
-	/// Check if the same `Regex` is already present in the cache and return it,
-	/// otherwise tries to create a new one and inserts it into the cache.
+	/// Save the given regular expression in the cache.
+	///
+	/// # Example
+	///
+	/// ```
+	/// # use regex_cache::{Regex, RegexCache};
+	/// let mut cache = RegexCache::new(100);
+	/// let     re    = Regex::new(r"^\d+$").unwrap();
+	///
+	/// // By saving the previously created regular expression further calls to
+	/// // `compile` won't actually compile the regular expression.
+	/// cache.save(re);
+	///
+	/// assert!(cache.compile(r"^\d+$").unwrap().is_match("1234"));
+	/// assert!(!cache.compile(r"^\d+$").unwrap().is_match("abcd"));
+	/// ```
+	pub fn save(&mut self, re: Regex) -> &Regex {
+		let source = re.as_str().to_owned();
+
+		if !self.0.contains_key(re.as_str()) {
+			self.insert(source.clone(), re);
+		}
+
+		self.0.get_mut(&source).unwrap()
+	}
+
+	/// Create a new regular expression in the cache.
+	///
+	/// # Example
+	///
+	/// ```
+	/// # use regex_cache::RegexCache;
+	/// let mut cache = RegexCache::new(100);
+	///
+	/// assert!(cache.compile(r"^\d+$").unwrap().is_match("1234"));
+	/// assert!(!cache.compile(r"^\d+$").unwrap().is_match("abcd"));
+	/// ```
 	pub fn compile(&mut self, source: &str) -> Result<&Regex, Error> {
 		if !self.0.contains_key(source) {
 			self.0.insert(source.into(), Regex::new(source)?);
+		}
+
+		Ok(self.0.get_mut(source).unwrap())
+	}
+
+	/// Configure a new regular expression.
+	///
+	/// # Example
+	///
+	/// ```
+	/// # use regex_cache::RegexCache;
+	/// let mut cache = RegexCache::new(100);
+	///
+	/// assert!(cache.configure(r"abc", |b| b.case_insensitive(true)).unwrap()
+	/// 	.is_match("ABC"));
+	///
+	/// assert!(!cache.configure(r"abc", |b| b.case_insensitive(true)).unwrap()
+	/// 	.is_match("123"));
+	/// ```
+	pub fn configure<F>(&mut self, source: &str, f: F) -> Result<&Regex, Error>
+		where F: FnOnce(&mut RegexBuilder) -> &mut RegexBuilder
+	{
+		if !self.0.contains_key(source) {
+			self.0.insert(source.into(), f(&mut RegexBuilder::new(source)).build()?);
 		}
 
 		Ok(self.0.get_mut(source).unwrap())
