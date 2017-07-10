@@ -65,6 +65,12 @@ impl Deref for LazyRegex {
 	type Target = Regex;
 
 	fn deref(&self) -> &Regex {
+		self.as_ref()
+	}
+}
+
+impl AsRef<Regex> for LazyRegex {
+	fn as_ref(&self) -> &Regex {
 		self.local.get_or(||
 			Box::new(RegexBuilder::new(&self.builder.source)
 				.case_insensitive(self.builder.case_insensitive)
