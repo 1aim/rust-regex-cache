@@ -19,11 +19,19 @@
 // SOFTWARE.
 
 use std::ops::{Deref, DerefMut};
+use std::sync::{Mutex, Arc};
+use std::borrow::Cow;
+use std::fmt;
+use std::str;
 
 use regex::{Regex, RegexBuilder, Error};
+use regex::{Match, Captures, Replacer};
+use syntax::Expr;
+use options::Options;
 use lru::LruCache;
 
 /// An LRU cache for regular expressions.
+#[derive(Clone, Debug)]
 pub struct RegexCache(LruCache<String, Regex>);
 
 impl RegexCache {
@@ -116,9 +124,191 @@ impl DerefMut for RegexCache {
 	}
 }
 
+#[derive(Clone)]
+pub struct CachedRegex {
+	builder: CachedRegexBuilder,
+}
+
+macro_rules! regex {
+	($self:ident) => (
+		$self.builder.cache.lock().unwrap().configure(&$self.builder.source, |b|
+			$self.builder.options.define(b)).unwrap()
+	)
+}
+
+impl CachedRegex {
+	/// Create a new cached `Regex` for the given source, checking the syntax is
+	/// valid.
+	pub fn new(cache: Arc<Mutex<RegexCache>>, source: &str) -> Result<CachedRegex, Error> {
+		if let Err(err) = Expr::parse(source) {
+			return Err(err.into());
+		}
+
+		Ok(CachedRegex::from(CachedRegexBuilder::new(cache, source)))
+	}
+
+	fn from(builder: CachedRegexBuilder) -> Self {
+		CachedRegex {
+			builder: builder,
+		}
+	}
+
+	/// Refer to `Regex::is_match`.
+	pub fn is_match(&self, text: &str) -> bool {
+		regex!(self).is_match(text)
+	}
+
+	/// Refer to `Regex::find`.
+	pub fn find<'t>(&self, text: &'t str) -> Option<Match<'t>> {
+		regex!(self).find(text)
+	}
+
+	/// Refer to `Regex::captures`.
+	pub fn captures<'t>(&self, text: &'t str) -> Option<Captures<'t>> {
+		regex!(self).captures(text)
+	}
+
+	/// Refer to `Regex::replace`.
+	pub fn replace<'t, R: Replacer>(&self, text: &'t str, rep: R) -> Cow<'t, str> {
+		regex!(self).replace(text, rep)
+	}
+
+	/// Refer to `Regex::replace_all`.
+	pub fn replace_all<'t, R: Replacer>(&self, text: &'t str, rep: R) -> Cow<'t, str> {
+		regex!(self).replace_all(text, rep)
+	}
+
+	/// Refer to `Regex::shortest_match`.
+	pub fn shortest_match(&self, text: &str) -> Option<usize> {
+		regex!(self).shortest_match(text)
+	}
+
+	pub fn captures_len(&self) -> usize {
+		regex!(self).captures_len()
+	}
+
+	pub fn as_str(&self) -> &str {
+		&self.builder.source
+	}
+}
+
+impl fmt::Debug for CachedRegex {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		fmt::Debug::fmt(regex!(self), f)
+	}
+}
+
+impl fmt::Display for CachedRegex {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		fmt::Display::fmt(regex!(self), f)
+	}
+}
+
+/// A configurable builder for a cached `Regex`.
+#[derive(Clone, Debug)]
+pub struct CachedRegexBuilder {
+	cache:   Arc<Mutex<RegexCache>>,
+	source:  String,
+	options: Options,
+}
+
+impl CachedRegexBuilder {
+	/// Create a new regular expression builder with the given pattern.
+	///
+	/// If the pattern is invalid, then an error will be returned when
+	/// `compile` is called.
+	pub fn new(cache: Arc<Mutex<RegexCache>>, source: &str) -> CachedRegexBuilder {
+		CachedRegexBuilder {
+			cache:   cache,
+			source:  source.to_owned(),
+			options: Default::default(),
+		}
+	}
+
+	/// Consume the builder and compile the regular expression.
+	///
+	/// Note that calling `as_str` on the resulting `Regex` will produce the
+	/// pattern given to `new` verbatim. Notably, it will not incorporate any
+	/// of the flags set on this builder.
+	pub fn build(&self) -> Result<CachedRegex, Error> {
+		if let Err(err) = Expr::parse(&self.source) {
+			return Err(err.into());
+		}
+
+		Ok(CachedRegex::from(self.clone()))
+	}
+
+	/// Set the value for the case insensitive (`i`) flag.
+	pub fn case_insensitive(&mut self, yes: bool) -> &mut CachedRegexBuilder {
+		self.options.case_insensitive = yes;
+		self
+	}
+
+	/// Set the value for the multi-line matching (`m`) flag.
+	pub fn multi_line(&mut self, yes: bool) -> &mut CachedRegexBuilder {
+		self.options.multi_line = yes;
+		self
+	}
+
+	/// Set the value for the any character (`s`) flag, where in `.` matches
+	/// anything when `s` is set and matches anything except for new line when
+	/// it is not set (the default).
+	///
+	/// N.B. "matches anything" means "any byte" for `regex::bytes::Regex`
+	/// expressions and means "any Unicode scalar value" for `regex::Regex`
+	/// expressions.
+	pub fn dot_matches_new_line(&mut self, yes: bool) -> &mut CachedRegexBuilder {
+		self.options.dot_matches_new_line = yes;
+		self
+	}
+
+	/// Set the value for the greedy swap (`U`) flag.
+	pub fn swap_greed(&mut self, yes: bool) -> &mut CachedRegexBuilder {
+		self.options.swap_greed = yes;
+		self
+	}
+
+	/// Set the value for the ignore whitespace (`x`) flag.
+	pub fn ignore_whitespace(&mut self, yes: bool) -> &mut CachedRegexBuilder {
+		self.options.ignore_whitespace = yes;
+		self
+	}
+
+	/// Set the value for the Unicode (`u`) flag.
+	pub fn unicode(&mut self, yes: bool) -> &mut CachedRegexBuilder {
+		self.options.unicode = yes;
+		self
+	}
+
+	/// Set the approximate size limit of the compiled regular expression.
+	///
+	/// This roughly corresponds to the number of bytes occupied by a single
+	/// compiled program. If the program exceeds this number, then a
+	/// compilation error is returned.
+	pub fn size_limit(&mut self, limit: usize) -> &mut CachedRegexBuilder {
+		self.options.size_limit = limit;
+		self
+	}
+
+	/// Set the approximate size of the cache used by the DFA.
+	///
+	/// This roughly corresponds to the number of bytes that the DFA will
+	/// use while searching.
+	///
+	/// Note that this is a *per thread* limit. There is no way to set a global
+	/// limit. In particular, if a regex is used from multiple threads
+	/// simulanteously, then each thread may use up to the number of bytes
+	/// specified here.
+	pub fn dfa_size_limit(&mut self, limit: usize) -> &mut CachedRegexBuilder {
+		self.options.dfa_size_limit = limit;
+		self
+	}
+}
+
 #[cfg(test)]
 mod test {
-	use cache::RegexCache;
+	use std::sync::{Arc, Mutex};
+	use cache::{RegexCache, CachedRegex};
 
 	#[test]
 	fn respects_limit() {
@@ -130,5 +320,14 @@ mod test {
 		assert_eq!(cache.len(), 2);
 		cache.compile("[21]3").unwrap();
 		assert_eq!(cache.len(), 2);
+	}
+
+	#[test]
+	fn cached_regex() {
+		let cache = Arc::new(Mutex::new(RegexCache::new(100)));
+		let re = CachedRegex::new(cache.clone(), r"^\d+$").unwrap();
+
+		assert!(re.is_match("123"));
+		assert!(!re.is_match("abc"));
 	}
 }
