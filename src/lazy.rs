@@ -67,16 +67,16 @@ impl LazyRegex {
 		}
 	}
 
-	fn create(&self) -> Regex {
-		RegexBuilder::new(&self.builder.source)
-			.case_insensitive(self.builder.case_insensitive)
-			.multi_line(self.builder.multi_line)
-			.dot_matches_new_line(self.builder.dot_matches_new_line)
-			.swap_greed(self.builder.swap_greed)
-			.ignore_whitespace(self.builder.ignore_whitespace)
-			.unicode(self.builder.unicode)
-			.size_limit(self.builder.size_limit)
-			.dfa_size_limit(self.builder.dfa_size_limit)
+	fn create(builder: &LazyRegexBuilder) -> Regex {
+		RegexBuilder::new(&builder.source)
+			.case_insensitive(builder.case_insensitive)
+			.multi_line(builder.multi_line)
+			.dot_matches_new_line(builder.dot_matches_new_line)
+			.swap_greed(builder.swap_greed)
+			.ignore_whitespace(builder.ignore_whitespace)
+			.unicode(builder.unicode)
+			.size_limit(builder.size_limit)
+			.dfa_size_limit(builder.dfa_size_limit)
 			.build().unwrap()
 	}
 }
@@ -92,10 +92,19 @@ impl Deref for LazyRegex {
 impl AsRef<Regex> for LazyRegex {
 	fn as_ref(&self) -> &Regex {
 		if let Some(mut guard) = self.regex.lock() {
-			*guard = Some(self.create());
+			*guard = Some(LazyRegex::create(&self.builder));
 		}
 
 		(*self.regex).as_ref().unwrap()
+	}
+}
+
+impl Into<Regex> for LazyRegex {
+	fn into(self) -> Regex {
+		let (regex, builder) = (self.regex, self.builder);
+
+		Arc::try_unwrap(regex).ok().and_then(|m| m.into_inner()).unwrap_or_else(||
+			LazyRegex::create(&builder))
 	}
 }
 
