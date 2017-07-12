@@ -22,9 +22,11 @@ use std::ops::Deref;
 use std::fmt;
 use std::str;
 
+use std::sync::Arc;
+use oncemutex::OnceMutex;
+
 use regex::{Regex, RegexBuilder, Error};
 use syntax::Expr;
-use thread_local::CachedThreadLocal;
 
 /// A lazily created `Regex`.
 ///
@@ -38,12 +40,13 @@ use thread_local::CachedThreadLocal;
 /// ```
 /// # use regex_cache::LazyRegex;
 /// let re = LazyRegex::new("[0-9]{3}-[0-9]{3}-[0-9]{4}").unwrap();
-/// let mat = re.find("phone: 111-222-3333").unwrap();
-/// assert_eq!((mat.start(), mat.end()), (7, 19));
+/// let m  = re.find("phone: 111-222-3333").unwrap();
+/// assert_eq!((m.start(), m.end()), (7, 19));
 /// ```
+#[derive(Clone)]
 pub struct LazyRegex {
 	builder: LazyRegexBuilder,
-	local:   CachedThreadLocal<Regex>,
+	regex:   Arc<OnceMutex<Option<Regex>>>
 }
 
 impl LazyRegex {
@@ -54,10 +57,27 @@ impl LazyRegex {
 			return Err(err.into());
 		}
 
-		Ok(LazyRegex {
-			builder: LazyRegexBuilder::new(source),
-			local:   Default::default(),
-		})
+		Ok(LazyRegex::from(LazyRegexBuilder::new(source)))
+	}
+
+	fn from(builder: LazyRegexBuilder) -> Self {
+		LazyRegex {
+			builder: builder,
+			regex:   Arc::new(OnceMutex::new(None)),
+		}
+	}
+
+	fn create(&self) -> Regex {
+		RegexBuilder::new(&self.builder.source)
+			.case_insensitive(self.builder.case_insensitive)
+			.multi_line(self.builder.multi_line)
+			.dot_matches_new_line(self.builder.dot_matches_new_line)
+			.swap_greed(self.builder.swap_greed)
+			.ignore_whitespace(self.builder.ignore_whitespace)
+			.unicode(self.builder.unicode)
+			.size_limit(self.builder.size_limit)
+			.dfa_size_limit(self.builder.dfa_size_limit)
+			.build().unwrap()
 	}
 }
 
@@ -71,26 +91,11 @@ impl Deref for LazyRegex {
 
 impl AsRef<Regex> for LazyRegex {
 	fn as_ref(&self) -> &Regex {
-		self.local.get_or(||
-			Box::new(RegexBuilder::new(&self.builder.source)
-				.case_insensitive(self.builder.case_insensitive)
-				.multi_line(self.builder.multi_line)
-				.dot_matches_new_line(self.builder.dot_matches_new_line)
-				.swap_greed(self.builder.swap_greed)
-				.ignore_whitespace(self.builder.ignore_whitespace)
-				.unicode(self.builder.unicode)
-				.size_limit(self.builder.size_limit)
-				.dfa_size_limit(self.builder.dfa_size_limit)
-				.build().unwrap()))
-	}
-}
-
-impl Clone for LazyRegex {
-	fn clone(&self) -> LazyRegex {
-		LazyRegex {
-			builder: self.builder.clone(),
-			local:   Default::default(),
+		if let Some(mut guard) = self.regex.lock() {
+			*guard = Some(self.create());
 		}
+
+		(*self.regex).as_ref().unwrap()
 	}
 }
 
@@ -167,10 +172,7 @@ impl LazyRegexBuilder {
 			return Err(err.into());
 		}
 
-		Ok(LazyRegex {
-			builder: self.clone(),
-			local:   Default::default(),
-		})
+		Ok(LazyRegex::from(self.clone()))
 	}
 
 	/// Set the value for the case insensitive (`i`) flag.
@@ -237,5 +239,40 @@ impl LazyRegexBuilder {
 	pub fn dfa_size_limit(&mut self, limit: usize) -> &mut LazyRegexBuilder {
 		self.dfa_size_limit = limit;
 		self
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use ::{LazyRegex, LazyRegexBuilder};
+
+	#[test]
+	fn new() {
+		assert!(LazyRegex::new(r"^\d+$").unwrap()
+			.is_match("2345"));
+
+		assert!(!LazyRegex::new(r"^[a-z]+$").unwrap()
+			.is_match("2345"));
+	}
+
+	#[test]
+	fn build() {
+		assert!(LazyRegexBuilder::new(r"^abc$")
+			.case_insensitive(true).build().unwrap()
+			.is_match("ABC"));
+
+		assert!(!LazyRegexBuilder::new(r"^abc$")
+			.case_insensitive(false).build().unwrap()
+			.is_match("ABC"));
+	}
+
+	#[test]
+	fn same() {
+		let re = LazyRegex::new(r"^\d+$").unwrap();
+
+		assert!(re.is_match("1234"));
+		assert!(re.is_match("1234"));
+		assert!(re.is_match("1234"));
+		assert!(re.is_match("1234"));
 	}
 }

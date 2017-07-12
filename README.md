@@ -3,8 +3,8 @@ regex-cache [![Crates.io](https://img.shields.io/crates/v/regex-cache.svg)](http
 This crate provides a library for caching or lazily creating regular
 expressions.
 
-Lazy regular expressions are backed by Thread Local Storage, while the
-regular expression cache is backed by a Least Recently Used cache.
+Lazy regular expressions are backed by a [OnceMutex](https://github.com/reem/rust-once-mutex),
+while the regular expression cache is backed by a Least Recently Used cache.
 
 Why not `lazy_static!`?
 -----------------------
@@ -17,15 +17,8 @@ store as `String` since that makes you lose type information and ease of use.
 
 When to use `LazyRegex`
 -----------------------
-When you have a lot of regular expressions you don't want to use instantly and
-you don't care about having them still allocated after being used.
-
-Since they're backed by Thread Local Storage you also have to keep in mind that
-they will be compiled again every time the `LazyRegex` is accessed in a
-different thread.
-
-If you're passing around the regular expression to newly created threads you
-might want to use a locked `RegexCache` instead.
+When you have many regular expressions you don't want to use instantly and
+don't care about delaying the regular expression compilation.
 
 When to use `RegexCache`
 ------------------------
@@ -33,5 +26,5 @@ When you want to limit the number of active regular expressions, the
 `RegexCache` only keeps around a specified number of actively used regular
 expressions.
 
-Since it's an LRU cache having a small limit and using a different regular
-expression every time ends up wasting memory and time for nothing.
+Since it's an LRU cache having a small limit and using different regular
+expressions every time ends up wasting memory and time for nothing.

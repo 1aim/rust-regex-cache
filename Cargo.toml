@@ -13,4 +13,4 @@ keywords    = ["regex", "lazy", "cache"]
 regex        = "0.2"
 regex-syntax = "0.4"
 lru-cache    = "0.1"
-thread_local = "0.3"
+oncemutex    = "0.1"
