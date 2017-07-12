@@ -18,20 +18,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//! This crate provides a library for caching or lazily creating regular
-//! expressions.
+use regex::RegexBuilder;
 
-extern crate regex;
-extern crate regex_syntax as syntax;
-extern crate lru_cache as lru;
-extern crate oncemutex;
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub struct Options {
+	pub case_insensitive: bool,
+	pub multi_line: bool,
+	pub dot_matches_new_line: bool,
+	pub swap_greed: bool,
+	pub ignore_whitespace: bool,
+	pub unicode: bool,
+	pub size_limit: usize,
+	pub dfa_size_limit: usize,
+}
 
-pub use regex::{Regex, RegexBuilder, Error};
+impl Default for Options {
+	fn default() -> Self {
+		Options {
+			case_insensitive: false,
+			multi_line: false,
+			dot_matches_new_line: false,
+			swap_greed: false,
+			ignore_whitespace: false,
+			unicode: true,
+			size_limit: 10 * (1 << 20),
+			dfa_size_limit: 2 * (1 << 20),
+		}
+	}
+}
 
-mod options;
-
-mod cache;
-pub use cache::RegexCache;
-
-mod lazy;
-pub use lazy::{LazyRegex, LazyRegexBuilder};
+impl Options {
+	pub fn define<'b>(&self, builder: &'b mut RegexBuilder) -> &'b mut RegexBuilder {
+		builder
+			.case_insensitive(self.case_insensitive)
+			.multi_line(self.multi_line)
+			.dot_matches_new_line(self.dot_matches_new_line)
+			.swap_greed(self.swap_greed)
+			.ignore_whitespace(self.ignore_whitespace)
+			.unicode(self.unicode)
+			.size_limit(self.size_limit)
+			.dfa_size_limit(self.dfa_size_limit)
+	}
+}

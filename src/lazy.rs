@@ -27,6 +27,7 @@ use oncemutex::OnceMutex;
 
 use regex::{Regex, RegexBuilder, Error};
 use syntax::Expr;
+use options::Options;
 
 /// A lazily created `Regex`.
 ///
@@ -68,15 +69,7 @@ impl LazyRegex {
 	}
 
 	fn create(builder: &LazyRegexBuilder) -> Regex {
-		RegexBuilder::new(&builder.source)
-			.case_insensitive(builder.case_insensitive)
-			.multi_line(builder.multi_line)
-			.dot_matches_new_line(builder.dot_matches_new_line)
-			.swap_greed(builder.swap_greed)
-			.ignore_whitespace(builder.ignore_whitespace)
-			.unicode(builder.unicode)
-			.size_limit(builder.size_limit)
-			.dfa_size_limit(builder.dfa_size_limit)
+		builder.options.define(&mut RegexBuilder::new(&builder.source))
 			.build().unwrap()
 	}
 }
@@ -132,30 +125,7 @@ impl str::FromStr for LazyRegex {
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct LazyRegexBuilder {
 	source: String,
-	case_insensitive: bool,
-	multi_line: bool,
-	dot_matches_new_line: bool,
-	swap_greed: bool,
-	ignore_whitespace: bool,
-	unicode: bool,
-	size_limit: usize,
-	dfa_size_limit: usize,
-}
-
-impl Default for LazyRegexBuilder {
-	fn default() -> Self {
-		LazyRegexBuilder {
-			source: "".into(),
-			case_insensitive: false,
-			multi_line: false,
-			dot_matches_new_line: false,
-			swap_greed: false,
-			ignore_whitespace: false,
-			unicode: true,
-			size_limit: 10 * (1 << 20),
-			dfa_size_limit: 2 * (1 << 20),
-		}
-	}
+	options: Options,
 }
 
 impl LazyRegexBuilder {
@@ -166,8 +136,7 @@ impl LazyRegexBuilder {
 	pub fn new(source: &str) -> LazyRegexBuilder {
 		LazyRegexBuilder {
 			source: source.to_owned(),
-
-			.. Default::default()
+			options: Default::default(),
 		}
 	}
 
@@ -186,13 +155,13 @@ impl LazyRegexBuilder {
 
 	/// Set the value for the case insensitive (`i`) flag.
 	pub fn case_insensitive(&mut self, yes: bool) -> &mut LazyRegexBuilder {
-		self.case_insensitive = yes;
+		self.options.case_insensitive = yes;
 		self
 	}
 
 	/// Set the value for the multi-line matching (`m`) flag.
 	pub fn multi_line(&mut self, yes: bool) -> &mut LazyRegexBuilder {
-		self.multi_line = yes;
+		self.options.multi_line = yes;
 		self
 	}
 
@@ -204,25 +173,25 @@ impl LazyRegexBuilder {
 	/// expressions and means "any Unicode scalar value" for `regex::Regex`
 	/// expressions.
 	pub fn dot_matches_new_line(&mut self, yes: bool) -> &mut LazyRegexBuilder {
-		self.dot_matches_new_line = yes;
+		self.options.dot_matches_new_line = yes;
 		self
 	}
 
 	/// Set the value for the greedy swap (`U`) flag.
 	pub fn swap_greed(&mut self, yes: bool) -> &mut LazyRegexBuilder {
-		self.swap_greed = yes;
+		self.options.swap_greed = yes;
 		self
 	}
 
 	/// Set the value for the ignore whitespace (`x`) flag.
 	pub fn ignore_whitespace(&mut self, yes: bool) -> &mut LazyRegexBuilder {
-		self.ignore_whitespace = yes;
+		self.options.ignore_whitespace = yes;
 		self
 	}
 
 	/// Set the value for the Unicode (`u`) flag.
 	pub fn unicode(&mut self, yes: bool) -> &mut LazyRegexBuilder {
-		self.unicode = yes;
+		self.options.unicode = yes;
 		self
 	}
 
@@ -232,7 +201,7 @@ impl LazyRegexBuilder {
 	/// compiled program. If the program exceeds this number, then a
 	/// compilation error is returned.
 	pub fn size_limit(&mut self, limit: usize) -> &mut LazyRegexBuilder {
-		self.size_limit = limit;
+		self.options.size_limit = limit;
 		self
 	}
 
@@ -246,7 +215,7 @@ impl LazyRegexBuilder {
 	/// simulanteously, then each thread may use up to the number of bytes
 	/// specified here.
 	pub fn dfa_size_limit(&mut self, limit: usize) -> &mut LazyRegexBuilder {
-		self.dfa_size_limit = limit;
+		self.options.dfa_size_limit = limit;
 		self
 	}
 }
