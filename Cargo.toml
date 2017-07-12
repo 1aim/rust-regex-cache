@@ -1,6 +1,6 @@
 [package]
 name    = "regex-cache"
-version = "0.1.2"
+version = "0.1.3"
 
 authors = ["meh. <meh@1aim.com>"]
 license = "MIT"
