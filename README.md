@@ -28,3 +28,17 @@ expressions.
 
 Since it's an LRU cache having a small limit and using different regular
 expressions every time ends up wasting memory and time for nothing.
+
+When to use `CachedRegex`
+-------------------------
+When you want to transparently use a `RegexCache` and still have an easy to use
+and typed regular expression instead of storing a `String` to then compile with
+the `RegexCache`.
+
+Keep in mind what's stored inside a `CachedRegex` is an
+`Arc<Mutex<RegexCache>>`, which means there is locking involved when calling
+any methods on `CachedRegex`.
+
+For technical reasons there is no way to get a `&Regex` out of a `CachedRegex`
+and some methods from `Regex` aren't usable on a `CachedRegex`, it should still
+be fine for most uses.
