@@ -26,7 +26,7 @@ use std::str;
 
 use regex::{Regex, RegexBuilder, Error};
 use regex::{Match, Captures, Replacer};
-use syntax::Expr;
+use syntax;
 use options::Options;
 use lru::LruCache;
 
@@ -140,8 +140,8 @@ impl CachedRegex {
 	/// Create a new cached `Regex` for the given source, checking the syntax is
 	/// valid.
 	pub fn new(cache: Arc<Mutex<RegexCache>>, source: &str) -> Result<CachedRegex, Error> {
-		if let Err(err) = Expr::parse(source) {
-			return Err(err.into());
+		if let Err(err) = syntax::Parser::new().parse(source) {
+			return Err(Error::Syntax(err.to_string()));
 		}
 
 		Ok(CachedRegex::from(CachedRegexBuilder::new(cache, source)))
@@ -231,8 +231,8 @@ impl CachedRegexBuilder {
 	/// pattern given to `new` verbatim. Notably, it will not incorporate any
 	/// of the flags set on this builder.
 	pub fn build(&self) -> Result<CachedRegex, Error> {
-		if let Err(err) = Expr::parse(&self.source) {
-			return Err(err.into());
+		if let Err(err) = syntax::Parser::new().parse(&self.source) {
+			return Err(Error::Syntax(err.to_string()));
 		}
 
 		Ok(CachedRegex::from(self.clone()))

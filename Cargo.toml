@@ -11,6 +11,6 @@ keywords    = ["regex", "lazy", "cache"]
 
 [dependencies]
 regex        = "0.2"
-regex-syntax = "0.4"
+regex-syntax = "0.5"
 lru-cache    = "0.1"
 oncemutex    = "0.1"

@@ -26,7 +26,7 @@ use std::sync::Arc;
 use oncemutex::OnceMutex;
 
 use regex::{Regex, RegexBuilder, Error};
-use syntax::Expr;
+use syntax;
 use options::Options;
 
 /// A lazily created `Regex`.
@@ -54,8 +54,8 @@ impl LazyRegex {
 	/// Create a new lazy `Regex` for the given source, checking the syntax is
 	/// valid.
 	pub fn new(source: &str) -> Result<LazyRegex, Error> {
-		if let Err(err) = Expr::parse(source) {
-			return Err(err.into());
+		if let Err(err) = syntax::Parser::new().parse(source) {
+			return Err(Error::Syntax(err.to_string()));
 		}
 
 		Ok(LazyRegex::from(LazyRegexBuilder::new(source)))
@@ -146,8 +146,8 @@ impl LazyRegexBuilder {
 	/// pattern given to `new` verbatim. Notably, it will not incorporate any
 	/// of the flags set on this builder.
 	pub fn build(&self) -> Result<LazyRegex, Error> {
-		if let Err(err) = Expr::parse(&self.source) {
-			return Err(err.into());
+		if let Err(err) = syntax::Parser::new().parse(&self.source) {
+			return Err(Error::Syntax(err.to_string()));
 		}
 
 		Ok(LazyRegex::from(self.clone()))
