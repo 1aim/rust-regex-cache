@@ -218,6 +218,12 @@ impl LazyRegexBuilder {
 		self.options.dfa_size_limit = limit;
 		self
 	}
+
+	/// Change the maximum number of nested parnetheses/brackets.
+	pub fn nest_limit(&mut self, limit: u32) -> &mut LazyRegexBuilder {
+		self.options.nest_limit = limit;
+		self
+	}
 }
 
 #[cfg(test)]

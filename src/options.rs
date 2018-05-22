@@ -30,6 +30,7 @@ pub struct Options {
 	pub unicode: bool,
 	pub size_limit: usize,
 	pub dfa_size_limit: usize,
+	pub nest_limit: u32,
 }
 
 impl Default for Options {
@@ -43,6 +44,7 @@ impl Default for Options {
 			unicode: true,
 			size_limit: 10 * (1 << 20),
 			dfa_size_limit: 2 * (1 << 20),
+			nest_limit: 250,
 		}
 	}
 }
@@ -58,5 +60,6 @@ impl Options {
 			.unicode(self.unicode)
 			.size_limit(self.size_limit)
 			.dfa_size_limit(self.dfa_size_limit)
+			.nest_limit(self.nest_limit)
 	}
 }
