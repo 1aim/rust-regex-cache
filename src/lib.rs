@@ -31,7 +31,7 @@ pub use regex::{Regex, RegexBuilder, Error};
 mod options;
 
 mod cache;
-pub use cache::{RegexCache, CachedRegex, CachedRegexBuilder};
+pub use crate::cache::{RegexCache, CachedRegex, CachedRegexBuilder};
 
 mod lazy;
-pub use lazy::{LazyRegex, LazyRegexBuilder};
+pub use crate::lazy::{LazyRegex, LazyRegexBuilder};

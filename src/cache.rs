@@ -26,9 +26,9 @@ use std::str;
 
 use regex::{Regex, RegexBuilder, Error};
 use regex::{Match, Captures, Replacer};
-use syntax;
-use options::Options;
-use lru::LruCache;
+use crate::syntax;
+use crate::options::Options;
+use crate::lru::LruCache;
 
 /// An LRU cache for regular expressions.
 #[derive(Clone, Debug)]
@@ -330,7 +330,7 @@ impl CachedRegexBuilder {
 #[cfg(test)]
 mod test {
 	use std::sync::{Arc, Mutex};
-	use cache::{RegexCache, CachedRegex};
+	use crate::cache::{RegexCache, CachedRegex};
 
 	#[test]
 	fn respects_limit() {

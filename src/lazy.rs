@@ -26,8 +26,8 @@ use std::sync::Arc;
 use oncemutex::OnceMutex;
 
 use regex::{Regex, RegexBuilder, Error};
-use syntax;
-use options::Options;
+use crate::syntax;
+use crate::options::Options;
 
 /// A lazily created `Regex`.
 ///
@@ -222,7 +222,7 @@ impl LazyRegexBuilder {
 
 #[cfg(test)]
 mod test {
-	use ::{LazyRegex, LazyRegexBuilder};
+	use crate::{LazyRegex, LazyRegexBuilder};
 
 	#[test]
 	fn new() {
