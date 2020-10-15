@@ -147,6 +147,15 @@ impl CachedRegex {
 		Ok(CachedRegex::from(CachedRegexBuilder::new(cache, source)))
 	}
 
+	/// Create a new cached `Regex` for the given source, without checking if the 
+	/// syntax is valid.
+	/// 
+	/// Only use this if you know that the syntax is valid or you are ready to 
+	/// handle potential syntax errors later on.
+	pub fn new_unchecked(cache: Arc<Mutex<RegexCache>>, source: &str) -> CachedRegex {
+		CachedRegex::from(CachedRegexBuilder::new(cache, source))
+	}
+
 	fn from(builder: CachedRegexBuilder) -> Self {
 		CachedRegex {
 			builder: builder,
@@ -236,6 +245,19 @@ impl CachedRegexBuilder {
 		}
 
 		Ok(CachedRegex::from(self.clone()))
+	}
+
+	/// Consume the builder and compile the regular expression without checking 
+	/// if the syntax is valid.
+	/// 
+	/// Only use this if you know that the syntax is valid or you are ready to 
+	/// handle potential syntax errors later on.
+	///
+	/// Note that calling `as_str` on the resulting `Regex` will produce the
+	/// pattern given to `new` verbatim. Notably, it will not incorporate any
+	/// of the flags set on this builder.
+	pub fn build_unchecked(&self) -> CachedRegex {
+		CachedRegex::from(self.clone())
 	}
 
 	/// Set the value for the case insensitive (`i`) flag.
