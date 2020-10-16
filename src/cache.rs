@@ -144,7 +144,7 @@ impl CachedRegex {
 			return Err(Error::Syntax(err.to_string()));
 		}
 
-		Ok(CachedRegex::from(CachedRegexBuilder::new(cache, source)))
+		Ok(CachedRegex::new_unchecked(cache, source))
 	}
 
 	/// Create a new cached `Regex` for the given source, without checking if the 
