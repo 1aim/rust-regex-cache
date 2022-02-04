@@ -12,7 +12,7 @@ keywords    = ["regex", "lazy", "cache"]
 readme = "README.md"
 
 [dependencies]
-regex        = "1.4"
-regex-syntax = "0.6"
-lru-cache    = "0.1"
-oncemutex    = "0.1"
+regex        = "1.5.4"
+regex-syntax = "0.6.25"
+lru-cache    = "0.1.2"
+oncemutex    = "0.1.1"
