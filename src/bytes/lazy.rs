@@ -25,9 +25,10 @@ use std::str;
 use oncemutex::OnceMutex;
 use std::sync::Arc;
 
-use crate::options::Options;
+use crate::bytes::options::Options;
 use crate::syntax;
-use regex::{Error, Regex, RegexBuilder};
+use regex::bytes::{Regex, RegexBuilder};
+use regex::Error;
 
 /// A lazily created `Regex`.
 ///
@@ -39,9 +40,9 @@ use regex::{Error, Regex, RegexBuilder};
 /// Find the location of a US phone number:
 ///
 /// ```
-/// # use regex_cache::LazyRegex;
+/// # use regex_cache::bytes::LazyRegex;
 /// let re = LazyRegex::new("[0-9]{3}-[0-9]{3}-[0-9]{4}").unwrap();
-/// let m  = re.find("phone: 111-222-3333").unwrap();
+/// let m  = re.find("phone: 111-222-3333".as_bytes()).unwrap();
 /// assert_eq!((m.start(), m.end()), (7, 19));
 /// ```
 #[derive(Clone)]
@@ -227,13 +228,17 @@ impl LazyRegexBuilder {
 
 #[cfg(test)]
 mod test {
-    use crate::{LazyRegex, LazyRegexBuilder};
+    use super::{LazyRegex, LazyRegexBuilder};
 
     #[test]
     fn new() {
-        assert!(LazyRegex::new(r"^\d+$").unwrap().is_match("2345"));
+        assert!(LazyRegex::new(r"^\d+$")
+            .unwrap()
+            .is_match("2345".as_bytes()));
 
-        assert!(!LazyRegex::new(r"^[a-z]+$").unwrap().is_match("2345"));
+        assert!(!LazyRegex::new(r"^[a-z]+$")
+            .unwrap()
+            .is_match("2345".as_bytes()));
     }
 
     #[test]
@@ -242,22 +247,22 @@ mod test {
             .case_insensitive(true)
             .build()
             .unwrap()
-            .is_match("ABC"));
+            .is_match("ABC".as_bytes()));
 
         assert!(!LazyRegexBuilder::new(r"^abc$")
             .case_insensitive(false)
             .build()
             .unwrap()
-            .is_match("ABC"));
+            .is_match("ABC".as_bytes()));
     }
 
     #[test]
     fn same() {
         let re = LazyRegex::new(r"^\d+$").unwrap();
 
-        assert!(re.is_match("1234"));
-        assert!(re.is_match("1234"));
-        assert!(re.is_match("1234"));
-        assert!(re.is_match("1234"));
+        assert!(re.is_match("1234".as_bytes()));
+        assert!(re.is_match("1234".as_bytes()));
+        assert!(re.is_match("1234".as_bytes()));
+        assert!(re.is_match("1234".as_bytes()));
     }
 }

@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use regex::RegexBuilder;
+use regex::bytes::RegexBuilder;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Options {

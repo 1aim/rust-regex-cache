@@ -24,11 +24,11 @@ use std::ops::{Deref, DerefMut};
 use std::str;
 use std::sync::{Arc, Mutex};
 
+use crate::bytes::options::Options;
 use crate::lru::LruCache;
-use crate::options::Options;
 use crate::syntax;
-use regex::{Captures, Match, Replacer};
-use regex::{Error, Regex, RegexBuilder};
+use regex::bytes::{Captures, Match, Regex, RegexBuilder, Replacer};
+use regex::Error;
 
 /// An LRU cache for regular expressions.
 #[derive(Clone, Debug)]
@@ -45,7 +45,7 @@ impl RegexCache {
     /// # Example
     ///
     /// ```
-    /// # use regex_cache::{Regex, RegexCache};
+    /// # use regex_cache::bytes::{Regex, RegexCache};
     /// let mut cache = RegexCache::new(100);
     /// let     re    = Regex::new(r"^\d+$").unwrap();
     ///
@@ -53,8 +53,8 @@ impl RegexCache {
     /// // `compile` won't actually compile the regular expression.
     /// cache.save(re);
     ///
-    /// assert!(cache.compile(r"^\d+$").unwrap().is_match("1234"));
-    /// assert!(!cache.compile(r"^\d+$").unwrap().is_match("abcd"));
+    /// assert!(cache.compile(r"^\d+$").unwrap().is_match("1234".as_bytes()));
+    /// assert!(!cache.compile(r"^\d+$").unwrap().is_match("abcd".as_bytes()));
     /// ```
     pub fn save(&mut self, re: Regex) -> &Regex {
         let source = re.as_str().to_owned();
@@ -71,11 +71,11 @@ impl RegexCache {
     /// # Example
     ///
     /// ```
-    /// # use regex_cache::RegexCache;
+    /// # use regex_cache::bytes::RegexCache;
     /// let mut cache = RegexCache::new(100);
     ///
-    /// assert!(cache.compile(r"^\d+$").unwrap().is_match("1234"));
-    /// assert!(!cache.compile(r"^\d+$").unwrap().is_match("abcd"));
+    /// assert!(cache.compile(r"^\d+$").unwrap().is_match("1234".as_bytes()));
+    /// assert!(!cache.compile(r"^\d+$").unwrap().is_match("abcd".as_bytes()));
     /// ```
     pub fn compile(&mut self, source: &str) -> Result<&Regex, Error> {
         if !self.0.contains_key(source) {
@@ -90,14 +90,14 @@ impl RegexCache {
     /// # Example
     ///
     /// ```
-    /// # use regex_cache::RegexCache;
+    /// # use regex_cache::bytes::RegexCache;
     /// let mut cache = RegexCache::new(100);
     ///
     /// assert!(cache.configure(r"abc", |b| b.case_insensitive(true)).unwrap()
-    ///     .is_match("ABC"));
+    ///     .is_match("ABC".as_bytes()));
     ///
     /// assert!(!cache.configure(r"abc", |b| b.case_insensitive(true)).unwrap()
-    ///    .is_match("123"));
+    ///    .is_match("123".as_bytes()));
     /// ```
     pub fn configure<F>(&mut self, source: &str, f: F) -> Result<&Regex, Error>
     where
@@ -167,33 +167,33 @@ impl CachedRegex {
         CachedRegex { builder }
     }
 
-    /// Refer to `Regex::is_match`.
-    pub fn is_match(&self, text: &str) -> bool {
+    /// Refer to `Regex::bytes::is_match`.
+    pub fn is_match(&self, text: &[u8]) -> bool {
         regex!(self).is_match(text)
     }
 
     /// Refer to `Regex::find`.
-    pub fn find<'t>(&self, text: &'t str) -> Option<Match<'t>> {
+    pub fn find<'t>(&self, text: &'t [u8]) -> Option<Match<'t>> {
         regex!(self).find(text)
     }
 
-    /// Refer to `Regex::captures`.
-    pub fn captures<'t>(&self, text: &'t str) -> Option<Captures<'t>> {
+    /// Refer to `Regex::bytes::captures`.
+    pub fn captures<'t>(&self, text: &'t [u8]) -> Option<Captures<'t>> {
         regex!(self).captures(text)
     }
 
     /// Refer to `Regex::replace`.
-    pub fn replace<'t, R: Replacer>(&self, text: &'t str, rep: R) -> Cow<'t, str> {
+    pub fn replace<'t, R: Replacer>(&self, text: &'t [u8], rep: R) -> Cow<'t, [u8]> {
         regex!(self).replace(text, rep)
     }
 
-    /// Refer to `Regex::replace_all`.
-    pub fn replace_all<'t, R: Replacer>(&self, text: &'t str, rep: R) -> Cow<'t, str> {
+    /// Refer to `Regex::bytes::replace_all`.
+    pub fn replace_all<'t, R: Replacer>(&self, text: &'t [u8], rep: R) -> Cow<'t, [u8]> {
         regex!(self).replace_all(text, rep)
     }
 
     /// Refer to `Regex::shortest_match`.
-    pub fn shortest_match(&self, text: &str) -> Option<usize> {
+    pub fn shortest_match(&self, text: &[u8]) -> Option<usize> {
         regex!(self).shortest_match(text)
     }
 
@@ -334,7 +334,7 @@ impl CachedRegexBuilder {
 
 #[cfg(test)]
 mod test {
-    use crate::cache::{CachedRegex, RegexCache};
+    use super::{CachedRegex, RegexCache};
     use std::sync::{Arc, Mutex};
 
     #[test]
@@ -354,7 +354,7 @@ mod test {
         let cache = Arc::new(Mutex::new(RegexCache::new(100)));
         let re = CachedRegex::new(cache.clone(), r"^\d+$").unwrap();
 
-        assert!(re.is_match("123"));
-        assert!(!re.is_match("abc"));
+        assert!(re.is_match("123".as_bytes()));
+        assert!(!re.is_match("abc".as_bytes()));
     }
 }
