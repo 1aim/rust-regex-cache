@@ -21,17 +21,17 @@
 //! This crate provides a library for caching or lazily creating regular
 //! expressions.
 
-extern crate regex;
-extern crate regex_syntax as syntax;
 extern crate lru_cache as lru;
 extern crate oncemutex;
+extern crate regex;
+extern crate regex_syntax as syntax;
 
-pub use regex::{Regex, RegexBuilder, Error};
+pub use regex::{Error, Regex, RegexBuilder};
 
 mod options;
 
 mod cache;
-pub use crate::cache::{RegexCache, CachedRegex, CachedRegexBuilder};
+pub use crate::cache::{CachedRegex, CachedRegexBuilder, RegexCache};
 
 mod lazy;
 pub use crate::lazy::{LazyRegex, LazyRegexBuilder};

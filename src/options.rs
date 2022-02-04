@@ -22,41 +22,41 @@ use regex::RegexBuilder;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Options {
-	pub case_insensitive: bool,
-	pub multi_line: bool,
-	pub dot_matches_new_line: bool,
-	pub swap_greed: bool,
-	pub ignore_whitespace: bool,
-	pub unicode: bool,
-	pub size_limit: usize,
-	pub dfa_size_limit: usize,
+    pub case_insensitive: bool,
+    pub multi_line: bool,
+    pub dot_matches_new_line: bool,
+    pub swap_greed: bool,
+    pub ignore_whitespace: bool,
+    pub unicode: bool,
+    pub size_limit: usize,
+    pub dfa_size_limit: usize,
 }
 
 impl Default for Options {
-	fn default() -> Self {
-		Options {
-			case_insensitive: false,
-			multi_line: false,
-			dot_matches_new_line: false,
-			swap_greed: false,
-			ignore_whitespace: false,
-			unicode: true,
-			size_limit: 10 * (1 << 20),
-			dfa_size_limit: 2 * (1 << 20),
-		}
-	}
+    fn default() -> Self {
+        Options {
+            case_insensitive: false,
+            multi_line: false,
+            dot_matches_new_line: false,
+            swap_greed: false,
+            ignore_whitespace: false,
+            unicode: true,
+            size_limit: 10 * (1 << 20),
+            dfa_size_limit: 2 * (1 << 20),
+        }
+    }
 }
 
 impl Options {
-	pub fn define<'b>(&self, builder: &'b mut RegexBuilder) -> &'b mut RegexBuilder {
-		builder
-			.case_insensitive(self.case_insensitive)
-			.multi_line(self.multi_line)
-			.dot_matches_new_line(self.dot_matches_new_line)
-			.swap_greed(self.swap_greed)
-			.ignore_whitespace(self.ignore_whitespace)
-			.unicode(self.unicode)
-			.size_limit(self.size_limit)
-			.dfa_size_limit(self.dfa_size_limit)
-	}
+    pub fn define<'b>(&self, builder: &'b mut RegexBuilder) -> &'b mut RegexBuilder {
+        builder
+            .case_insensitive(self.case_insensitive)
+            .multi_line(self.multi_line)
+            .dot_matches_new_line(self.dot_matches_new_line)
+            .swap_greed(self.swap_greed)
+            .ignore_whitespace(self.ignore_whitespace)
+            .unicode(self.unicode)
+            .size_limit(self.size_limit)
+            .dfa_size_limit(self.dfa_size_limit)
+    }
 }
