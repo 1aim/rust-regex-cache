@@ -35,3 +35,5 @@ pub use crate::cache::{CachedRegex, CachedRegexBuilder, RegexCache};
 
 mod lazy;
 pub use crate::lazy::{LazyRegex, LazyRegexBuilder};
+
+pub mod bytes;
